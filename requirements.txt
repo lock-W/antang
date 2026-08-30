@@ -1,0 +1,4 @@
+# 海报文字渲染（scripts/render_poster.py）
+Pillow
+# 火山方舟（豆包）SDK，scripts/test_skill.py 调用模型用
+volcengine-python-sdk[ark]

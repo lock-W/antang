@@ -1,0 +1,137 @@
+@import "tailwindcss";
+
+:root {
+  --background: #faf7f2; /* 米白底，乡土感 */
+  --foreground: #2f2a24;
+  --brand: #3f6b3f; /* 安塘绿 */
+  --brand-dark: #2f5230;
+  --accent: #b5762c; /* 丰收金 */
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-brand: var(--brand);
+  --color-brand-dark: var(--brand-dark);
+  --color-accent: var(--accent);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    "Microsoft YaHei",
+    "PingFang SC",
+    "Noto Sans SC",
+    sans-serif;
+}
+
+/* ------- markdown 正文样式（对话气泡内） ------- */
+.md-body > * + * {
+  margin-top: 0.5rem;
+}
+.md-body h1 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-top: 0.9rem;
+  color: var(--brand-dark);
+}
+.md-body h2 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-top: 0.8rem;
+}
+.md-body h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-top: 0.7rem;
+}
+.md-body h4 {
+  font-weight: 700;
+  margin-top: 0.6rem;
+}
+.md-body ul,
+.md-body ol {
+  padding-left: 1.25rem;
+  list-style: disc;
+}
+.md-body ol {
+  list-style: decimal;
+}
+.md-body li + li {
+  margin-top: 0.25rem;
+}
+.md-body li > ul,
+.md-body li > ol {
+  margin-top: 0.25rem;
+}
+.md-body ul:has(> li > input[type="checkbox"]) {
+  list-style: none;
+  padding-left: 0.25rem;
+}
+.md-body table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  margin-top: 0.6rem;
+}
+.md-body th,
+.md-body td {
+  border: 1px solid #d8d0c4;
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+  vertical-align: top;
+}
+.md-body th {
+  background: #efe9df;
+  font-weight: 600;
+}
+.md-body blockquote {
+  border-left: 3px solid var(--accent);
+  padding-left: 0.75rem;
+  color: #6b6256;
+  font-style: normal;
+}
+.md-body code {
+  background: rgba(0, 0, 0, 0.06);
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+.md-body pre {
+  background: #2f2a24;
+  color: #f5f0e8;
+  padding: 0.75rem;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+.md-body pre code {
+  background: transparent;
+  color: inherit;
+}
+.md-body hr {
+  border: none;
+  border-top: 1px dashed #d8d0c4;
+  margin: 0.75rem 0;
+}
+.md-body a {
+  color: var(--brand);
+  text-decoration: underline;
+}
+
+/* ------- 滚动条 ------- */
+.chat-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.chat-scroll::-webkit-scrollbar-thumb {
+  background: #d0c8ba;
+  border-radius: 3px;
+}
