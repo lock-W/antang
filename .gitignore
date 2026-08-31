@@ -19,6 +19,10 @@ web/node_modules/
 # 本地工具缓存
 .npm-cache/
 
+# 运行时日志（内网穿透日志等）
+cloudflared.log
+*.log
+
 # 系统文件
 .DS_Store
 Thumbs.db

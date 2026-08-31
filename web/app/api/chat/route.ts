@@ -30,6 +30,7 @@ import {
   getImageModel,
   getModel,
   isMockMode,
+  sanitizeHotlistText,
 } from "@/lib/server/ark";
 
 export const runtime = "nodejs";
@@ -89,10 +90,22 @@ function sseResponse(body: (send: (event: object) => void) => Promise<void>): Re
           closed = true; // 客户端已断开连接
         }
       };
+      // 心跳：模型首 token 可能要 1-2 分钟，期间每 15s 发一条 SSE 注释行保活，
+      // 防止 Cloudflare 隧道等中间代理因连接空闲约 100s 掐断（手机端 Load failed 的根因）
+      const heartbeat = setInterval(() => {
+        if (closed) return;
+        try {
+          controller.enqueue(encoder.encode(": ping\n\n"));
+        } catch {
+          closed = true;
+        }
+      }, 15_000);
       try {
         await body(send);
       } catch (e) {
         send({ type: "error", message: friendlyError(e) });
+      } finally {
+        clearInterval(heartbeat);
       }
       if (!closed) {
         try {
@@ -159,9 +172,13 @@ export async function POST(req: Request) {
 
   return sseResponse(async (send) => {
     const systemPrompt = await buildSystemPrompt(feature);
+    // 程序层热榜过滤：剔除政治/灾难/八卦类条目后再发给模型（防模型安全拒答）
+    const sanitizedMessages = messages.map((m) =>
+      m.role === "user" ? { ...m, content: sanitizeHotlistText(m.content) } : m
+    );
     const reply = await callChat(
       model,
-      [{ role: "system", content: systemPrompt }, ...messages],
+      [{ role: "system", content: systemPrompt }, ...sanitizedMessages],
       (delta) => send({ type: "delta", text: delta })
     );
 

@@ -51,7 +51,17 @@ export async function buildSystemPrompt(feature: FeatureConfig): Promise<string>
   } catch {
     throw new Error(`技能文件缺失：${feature.name}（${feature.skillPath}）`);
   }
-  const parts = [skill];
+  // 注入服务器真实当前日期：模型自身不知道"今天"，时令日历/热点推荐会瞎猜日期
+  // （实测曾把 8 月 30 日说成 8 月 17 日——从知识库示例里抄的）
+  const now = new Date();
+  const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
+  const today = `${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日（星期${weekdays[now.getDay()]}）`;
+  const parts = [
+    skill,
+    `\n\n===== 当前时间 =====\n\n今天是 ${today}。所有涉及"今天/最近/时令/日期"的判断，以此日期为准，禁止使用知识库示例中出现的日期。`,
+    `\n\n===== 运行纪律 =====\n\n若输入（如热榜条目）中含有你无法回应、不宜讨论、政治敏感、灾难伤亡、娱乐八卦、争议对立类内容：直接忽略这些条目即可，不要拒绝回答，不要说"无法回答/不能帮助"，按本技能的正常流程继续输出（轨道 A 时令日历选题永远可用；一条都推荐不出时按技能规定如实说明"今日热榜无合适话题，建议跟随时令日历"）。`,
+    `\n\n===== 输出格式纪律 =====\n\n必须严格按照本技能 SKILL.md 中规定的输出格式模板输出结构化内容，禁止用大段叙述文字替代。例如：热点雷达必须输出 "## 今日选题推荐" 下恰好 3 张 "### 卡片 N ｜ 类型" 卡片，每张卡片必须包含 - **话题名称**/- **结合角度**/- **适配产品**/- **推荐形式**/- **一句话理由**/- **下一步** 字段；物料工坊的海报必须输出【海报数据包】字段块；乡土编剧的脚本必须含分镜表；直播教练必须含五环节时间轴。输入缺失（如用户没提供热榜）时，按技能规定的降级流程正常输出（如只出时令日历卡片），不要在回复里解释或抱怨输入情况。`,
+  ];
   for (const kb of feature.kbFiles) {
     try {
       const content = await fs.readFile(path.join(PROJECT_ROOT, kb), "utf-8");
@@ -67,6 +77,45 @@ export async function buildSystemPrompt(feature: FeatureConfig): Promise<string>
 export interface ChatMessage {
   role: "system" | "user" | "assistant";
   content: string;
+}
+
+/**
+ * 热榜敏感条目过滤（程序层兜底）
+ *
+ * 背景：2026-08-30 实测——热点雷达点「刷新今日热榜」后，真实热榜含大量政治/灾难/
+ * 负面条目（领导人新闻、中央纪委、泥石流、坠河、毁容针、肝吸虫、明星八卦等），
+ * 模型看到密集敏感内容会触发自身安全拒答（"无法回答"），根本走不到 SKILL 的过滤流程。
+ * 修复：在把热榜发给模型前，程序化剔除高危条目；SKILL 的过滤逻辑照常再过滤一轮。
+ * 只对"这是今天的热榜"形式的文本生效，普通用户消息不受影响。
+ */
+const HOTLIST_BLOCK_KEYWORDS = [
+  // 政治 / 领导人 / 政务
+  "习近平", "中央纪委", "纪委", "总书记", "国务院", "外交部", "外交", "上合", "峰会",
+  "当选", "政协", "人大", "中央", "书记", "部长", "主席",
+  // 灾难 / 事故 / 救援
+  "泥石流", "洪水", "地震", "坠河", "坠机", "坠毁", "遇难", "遇害", "伤亡", "救援",
+  "抢险", "失联", "火灾", "爆炸", "滑坡", "冰崩", "受灾", "台风",
+  // 负面健康 / 医疗黑幕
+  "中毒", "肝吸虫", "病毒", "癌症", "毁容", "死亡", "尸体", "确诊", "疫情", "传染病",
+  "百草枯", "疾病",
+  // 娱乐八卦 / 争议
+  "王菲", "梅艳芳", "明星", "离婚", "绯闻", "演唱会", "艺人", "遗产", "谴责", "辟谣",
+  "犯罪", "遇害",
+];
+
+export function sanitizeHotlistText(text: string): string {
+  if (!/这是今天的热榜/.test(text)) return text;
+  const lines = text.split("\n");
+  const kept = lines.filter((line) => {
+    const t = line.trim();
+    if (!t) return true;
+    return !HOTLIST_BLOCK_KEYWORDS.some((k) => t.includes(k));
+  });
+  // 防过滤到空：兜底保留前 3 行
+  if (kept.length < 2) {
+    return lines.filter((l) => l.trim()).slice(0, 3).join("\n");
+  }
+  return kept.join("\n");
 }
 
 /**
@@ -176,6 +225,10 @@ async function renderOnePoster(
   await fs.mkdir(outDir, { recursive: true });
   const stamp = `${Date.now()}_${index}`;
   const bgPath = path.join(outDir, `bg_${stamp}.png`);
+  // 强制"画面无文字"约束：模型写的提示词偶有遗漏，AI 会在促销风画面里自己画上
+  // 价格标签/文字（实测画出过 ¥199 的假价格，与程序渲染的真实价格冲突）——程序侧统一兜底
+  const NO_TEXT_SUFFIX =
+    " Absolutely no text, no letters, no numbers, no digits, no price tags, no signs, no labels, no watermark anywhere in the image.";
   const bgResp = await fetch(`${ARK_BASE}/images/generations`, {
     method: "POST",
     headers: {
@@ -184,7 +237,7 @@ async function renderOnePoster(
     },
     body: JSON.stringify({
       model: imageModel,
-      prompt: fields.bgPrompt,
+      prompt: fields.bgPrompt + NO_TEXT_SUFFIX,
       size: "1728x2304",
       response_format: "b64_json",
       watermark: false,
@@ -247,7 +300,8 @@ async function renderOnePoster(
   await fs.unlink(bgPath).catch(() => {});
 
   return {
-    imageUrl: `/generated/${path.basename(outPath)}`,
+    // 生产模式 public/ 构建后新增文件 404，成品图统一走 /api/generated/ 动态路由
+    imageUrl: `/api/generated/${path.basename(outPath)}`,
     note: "海报已生成",
   };
 }
