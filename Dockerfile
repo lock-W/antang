@@ -22,8 +22,8 @@ ENV PORT=3000
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 python3-pip fonts-noto-cjk \
     && rm -rf /var/lib/apt/lists/*
-# Pillow（render_poster.py 依赖）
-RUN pip3 install --no-cache-dir Pillow
+# Pillow（render_poster.py 依赖）+ 建立 python 命令（代码里调 "python"，Debian 只有 python3）
+RUN pip3 install --no-cache-dir Pillow && ln -sf /usr/bin/python3 /usr/bin/python
 
 WORKDIR /app
 # Next 构建产物 + 静态资源
