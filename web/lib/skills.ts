@@ -45,7 +45,6 @@ export const FEATURES: Record<FeatureId, FeatureConfig> = {
     hasGuideMenu: false,
     skillPath: "skills/rural-scriptwriter/SKILL.md",
     kbFiles: [
-      "knowledge/01_安塘礼伴品牌介绍（补全版）.md",
       "knowledge/产品卡/金钻凤梨.md",
       "knowledge/产品卡/红营茶.md",
       "knowledge/产品卡/安塘丝苗米.md",
@@ -68,7 +67,6 @@ export const FEATURES: Record<FeatureId, FeatureConfig> = {
     hasGuideMenu: false,
     skillPath: "skills/live-coach/SKILL.md",
     kbFiles: [
-      "knowledge/01_安塘礼伴品牌介绍（补全版）.md",
       "knowledge/产品卡/金钻凤梨.md",
       "knowledge/产品卡/红营茶.md",
       "knowledge/产品卡/安塘丝苗米.md",
@@ -123,7 +121,6 @@ export const FEATURES: Record<FeatureId, FeatureConfig> = {
       "knowledge/产品卡/本土夏威夷果.md",
       "knowledge/品牌话术规范.md",
       "knowledge/广告法违禁词.md",
-      "knowledge/运营经验库.md",
     ],
   },
 };

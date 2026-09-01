@@ -1,0 +1,30 @@
+# 安塘智宣 · docker-compose（一条命令启动）
+# 用法：在项目根目录执行  docker compose up -d --build
+services:
+  web:
+    build: .
+    image: antang-zhixuan:latest
+    container_name: antang-zhixuan
+    ports:
+      - "3000:3000"
+    # 密钥/配置：从 web/.env 读取（.env 不进入镜像）
+    env_file:
+      - ./web/.env
+    environment:
+      - PROJECT_ROOT=/data/project
+      - PYTHONPATH=/data/project/scripts
+      # 热榜 API（可选，不填则用演示热榜）
+      # - HOTLIST_API_BASE=https://api-hot.imsyy.top
+    # 海报成品持久化（容器重建不丢图）
+    volumes:
+      - generated:/app/public/generated
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/hotlist',{method:'POST'}).then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  generated:

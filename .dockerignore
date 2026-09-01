@@ -1,0 +1,14 @@
+# 构建上下文排除（项目根目录）
+.git
+.npm-cache
+cloudflared.log
+*.log
+docs
+outputs
+tools
+tmp_test_*
+web/.env
+web/.next
+web/node_modules
+web/public/generated
+web/tsconfig.tsbuildinfo
